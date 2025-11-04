@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rural Tele-Health Platform</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    header { background: #1b5e20; color: #fff; padding: 20px; text-align: center; }
+    main { padding: 15px; }
+    section { background: #fff; margin-bottom: 15px; padding: 15px; border-radius: 5px; box-shadow: 0px 0px 8px #eee; }
+    h2 { color: #43753b; }
+    button, input, select { font-size: 16px; padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    .emergency { background: #d32f2f; color: #fff; border: none; font-weight: bold; }
+  </style>
+  <!-- Minimal JS for local caching and offline detection -->
+  <script>
+    // Store form data locally when offline, and sync when reconnected
+    function saveLocally(key, val) {
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+    function submitForm(formId, endpoint) {
+      var form = document.getElementById(formId);
+      var data = {};
+      Array.from(form.elements).forEach(el => { 
+        if (el.name) data[el.name] = el.value;
+      });
+      if (navigator.onLine) {
+        fetch(endpoint, { method: 'POST', body: JSON.stringify(data), headers:{'Content-Type':'application/json'} });
+        alert("Submitted online!");
+      } else {
+        saveLocally(formId, data);
+        alert("No network. Data saved locally & will upload automatically when online.");
+      }
+    }
+    window.addEventListener('online', function() {
+      ['consultForm', 'medicineForm', 'recordForm'].forEach(formId => {
+        var local = localStorage.getItem(formId);
+        if(local) {
+          fetch('/api/'+formId, { method: 'POST', body: local, headers:{'Content-Type':'application/json'} });
+          localStorage.removeItem(formId);
+        }
+      });
+      alert("Offline data synced!");
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Village Tele-Health Platform</h1>
+    <p>Connects villagers to doctors, medicine, records, and emergency help</p>
+  </header>
+  <main>
+    <section>
+      <h2>Consult a Doctor</h2>
+      <form id="consultForm" onsubmit="event.preventDefault();submitForm('consultForm','/api/consult');">
+        <input type="text" name="name" placeholder="Your name" required>
+        <select name="symptom">
+          <option value="">Select symptom</option>
+          <option value="fever">Fever</option>
+          <option value="injury">Injury</option>
+          <option value="other">Other</option>
+        </select>
+        <input type="text" name="details" placeholder="Describe your issue" required>
+        <button type="submit">Request Consultation</button>
+      </form>
+      <p>If no internet, form will save & send when online.</p>
+      <p>Or <a href="sms:+1800123456">Send SMS to Doctor</a> (for poor connection)</p>
+    </section>
+
+    <section>
+      <h2>Medicine Delivery Service</h2>
+      <form id="medicineForm" onsubmit="event.preventDefault();submitForm('medicineForm','/api/medicine');">
+        <input type="text" name="name" placeholder="Your name" required>
+        <input type="text" name="address" placeholder="Village address" required>
+        <select name="medicines">
+          <option value="">Select medicine</option>
+          <option value="Paracetamol">Paracetamol</option>
+          <option value="ORS">ORS</option>
+          <option value="Other">Other</option>
+        </select>
+        <button type="submit">Request Medicine</button>
+      </form>
+      <p>Or <a href="sms:+1800222333">Request via SMS</a></p>
+    </section>
+
+    <section>
+      <h2>Health Records Access</h2>
+      <form id="recordForm" onsubmit="event.preventDefault();submitForm('recordForm','/api/records');">
+        <input type="text" name="id" placeholder="Health Record ID" required>
+        <button type="submit">Fetch Record</button>
+      </form>
+      <p>Your records are securely stored and synced when online. For offline access, records can be downloaded as PDF.</p>
+    </section>
+
+    <section>
+      <h2>Emergency Support</h2>
+      <button class="emergency" onclick="window.location.href='tel:108'">Call Local Emergency (108)</button>
+      <p>If unable to call, <a href="sms:+1800999888">Send SMS for Emergency Help</a></p>
+    </section>
+  </main>
+  <footer style="text-align:center; color:#555; padding:10px;">
+    &copy; 2025 Rural Health Network
+  </footer>
+</body>
+</html>
